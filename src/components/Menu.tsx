@@ -136,7 +136,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Введите ваше имя..."
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 
+                className="w-full px-4 py-2.5 bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-white placeholder-white/30 
                 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
                 maxLength={20}
                 autoComplete="off"
@@ -153,7 +153,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                     key={diff}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setSelectedDifficulty(diff); playClickSound(); }}
-                    className={`w-full px-3 py-2 rounded-xl text-left font-medium transition-all flex items-center gap-3 ${
+                    className={`w-full px-3 py-2 rounded-xl backdrop-blur-lg text-left font-medium transition-all flex items-center gap-3 ${
                       selectedDifficulty === diff
                         ? 'bg-blue-500/30 text-white border-2 border-blue-400/50 shadow-lg shadow-blue-500/10'
                         : 'bg-white/5 text-white/60 border-2 border-transparent hover:bg-white/10'
@@ -182,7 +182,7 @@ export default function Menu({ onStartGame }: MenuProps) {
               whileTap={{ scale: 0.95 }}
               onClick={handleStart}
               disabled={!playerName.trim()}
-              className={`w-full mt-3 py-4 rounded-2xl text-xl font-bold transition-all ${
+              className={`w-full mt-3 py-4 backdrop-blur-lg rounded-2xl text-xl font-bold transition-all ${
                 playerName.trim()
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 active:shadow-xl active:from-green-600 active:to-emerald-700'
                   : 'bg-gray-700 text-gray-500 cursor-not-allowed'
