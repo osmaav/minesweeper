@@ -41,7 +41,7 @@ export const GAME_CONSTANTS = {
   MAX_LEADERBOARD_ENTRIES: 10,
   
   // UI
-  EXPLOSION_OVERLAY_DURATION: 3000, // 5 секунд показа сообщения о взрыве
+  EXPLOSION_OVERLAY_DURATION: 3000, // 3 секунд показа сообщения о взрыве
 } as const;
 
 // ============ УРОВНИ СЛОЖНОСТИ ============

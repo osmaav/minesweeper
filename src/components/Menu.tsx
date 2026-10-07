@@ -20,9 +20,9 @@ function FloatingMine({ delay, x, size }: { delay: number; x: number; size: numb
       className="absolute text-white/5 pointer-events-none select-none"
       style={{ left: `${x}%`, fontSize: size }}
       initial={{ y: '110vh', rotate: 30 }}
-      animate={{ y: '-110vh', rotate: 360 }}
+      animate={{ y: '-110vh', rotate: 180 }}
       transition={{
-        duration: 20 + Math.random() * 30,
+        duration: 15 + Math.random() * 20,
         delay: delay,
         repeat: Infinity,
         ease: 'linear',
@@ -88,7 +88,7 @@ export default function Menu({ onStartGame }: MenuProps) {
   const floatingMines = Array.from({ length: 24 }, (_, i) => ({
     delay: i * 1.2,
     x: Math.random() * 90 + 5,
-    size: Math.random() * 30 + 10,
+    size: Math.random() * 20 + 20,
   }));
 
   return (
