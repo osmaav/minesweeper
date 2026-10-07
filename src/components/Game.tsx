@@ -1,18 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Difficulty,
+  type Difficulty,
+  type OptimizedBoard,
   DIFFICULTY_CONFIG,
-  DIFFICULTY_LABELS,
-  CellData,
-  createBoard,
+  createOptimizedBoard,
   placeMines,
   revealCell,
   revealAllMines,
   checkWin,
   countFlags,
   chordReveal,
+  toggleCellFlag,
+  getVisibleCells,
 } from '../utils/gameLogic';
+import {
+  DIFFICULTY_LABELS,
+  GAME_CONSTANTS,
+} from '../utils/constants';
 import {
   saveGameResult,
   getSoundPreference,
@@ -28,6 +33,7 @@ import {
   playClickSound,
   startBackgroundMusic,
   stopBackgroundMusic,
+  switchMelody,
 } from '../utils/sounds';
 import CellComponent from './Cell';
 
@@ -41,7 +47,7 @@ type GameState = 'playing' | 'won' | 'lost';
 
 export default function Game({ difficulty, playerName, onBackToMenu }: GameProps) {
   const config = DIFFICULTY_CONFIG[difficulty];
-  const [board, setBoard] = useState<CellData[][]>(() => createBoard(config));
+  const [board, setBoard] = useState<OptimizedBoard>(() => createOptimizedBoard(config));
   const [gameState, setGameState] = useState<GameState>('playing');
   const [timer, setTimer] = useState(0);
   const [firstClick, setFirstClick] = useState(true);
@@ -50,10 +56,18 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const [showSettings, setShowSettings] = useState(false);
   const [cellSize, setCellSize] = useState(32);
   const [isShaking, setIsShaking] = useState(false);
+  const [renderVersion, setRenderVersion] = useState(0); // Force re-render
+  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
+  
   const timerRef = useRef<number | null>(null);
+  const explosionTimerRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
   const firstClickRef = useRef(firstClick);
   const timerValueRef = useRef(timer);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Keep refs in sync
   useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
@@ -71,10 +85,13 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       const availableWidth = screenWidth - padding;
       const availableHeight = screenHeight - headerHeight - footerHeight - padding;
       
-      const sizeByWidth = Math.floor(availableWidth / config.cols);
-      const sizeByHeight = Math.floor(availableHeight / config.rows);
-      const size = Math.min(sizeByWidth, sizeByHeight, 44);
-      setCellSize(Math.max(size, 18));
+      // For super difficulty, use smaller cells
+      const maxSize = difficulty === 'super' ? 20 : GAME_CONSTANTS.CELL_SIZE_MAX;
+      
+      const sizeByWidth = Math.floor(availableWidth / Math.min(config.cols, 30));
+      const sizeByHeight = Math.floor(availableHeight / Math.min(config.rows, 20));
+      const size = Math.min(sizeByWidth, sizeByHeight, maxSize);
+      setCellSize(Math.max(size, GAME_CONSTANTS.CELL_SIZE_MIN));
     }
     calculateCellSize();
     window.addEventListener('resize', calculateCellSize);
@@ -83,14 +100,35 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       window.removeEventListener('resize', calculateCellSize);
       window.removeEventListener('orientationchange', calculateCellSize);
     };
-  }, [config]);
+  }, [config, difficulty]);
+
+  // Viewport size tracking
+  useEffect(() => {
+    function updateViewport() {
+      if (scrollContainerRef.current) {
+        const rect = scrollContainerRef.current.getBoundingClientRect();
+        setViewportSize({ width: rect.width, height: rect.height });
+      }
+    }
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  // Scroll handler
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      setScrollTop(scrollContainerRef.current.scrollTop);
+      setScrollLeft(scrollContainerRef.current.scrollLeft);
+    }
+  }, []);
 
   // Timer
   useEffect(() => {
     if (gameState === 'playing' && !firstClick) {
       timerRef.current = window.setInterval(() => {
         setTimer(t => t + 1);
-      }, 1000);
+      }, GAME_CONSTANTS.TIMER_INTERVAL);
     }
     return () => {
       if (timerRef.current) {
@@ -103,25 +141,45 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   // Music
   useEffect(() => {
     if (musicEnabled) {
-      startBackgroundMusic();
+      startBackgroundMusic(false);
     } else {
       stopBackgroundMusic();
     }
     return () => stopBackgroundMusic();
   }, [musicEnabled]);
 
+  // Explosion overlay auto-hide
+  useEffect(() => {
+    if (gameState === 'lost') {
+      setShowExplosionOverlay(true);
+      explosionTimerRef.current = window.setTimeout(() => {
+        setShowExplosionOverlay(false);
+      }, GAME_CONSTANTS.EXPLOSION_OVERLAY_DURATION);
+    } else {
+      setShowExplosionOverlay(false);
+    }
+    return () => {
+      if (explosionTimerRef.current) {
+        clearTimeout(explosionTimerRef.current);
+        explosionTimerRef.current = null;
+      }
+    };
+  }, [gameState]);
+
+  const triggerReRender = useCallback(() => {
+    setRenderVersion(v => v + 1);
+  }, []);
+
   const handleReveal = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
 
     setBoard(currentBoard => {
-      let workingBoard = currentBoard;
-      
       if (firstClickRef.current) {
-        workingBoard = placeMines(currentBoard, config, row, col);
+        placeMines(currentBoard, row, col, config.mines);
         setFirstClick(false);
       }
 
-      const result = revealCell(workingBoard, row, col, config);
+      const result = revealCell(currentBoard, row, col);
       
       if (soundEnabled) {
         if (result.hitMine) {
@@ -146,10 +204,12 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
           time: 0,
           date: new Date().toISOString(),
         });
-        return revealAllMines(result.newBoard);
+        revealAllMines(currentBoard);
+        triggerReRender();
+        return currentBoard;
       }
 
-      if (checkWin(result.newBoard, config)) {
+      if (checkWin(currentBoard)) {
         setGameState('won');
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -165,29 +225,28 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         });
       }
 
-      return result.newBoard;
+      triggerReRender();
+      return currentBoard;
     });
-  }, [config, soundEnabled, playerName, difficulty]);
+  }, [config, soundEnabled, playerName, difficulty, triggerReRender]);
 
   const handleFlag = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
     if (firstClickRef.current) return;
 
     setBoard(currentBoard => {
-      const newBoard = currentBoard.map(r => r.map(c => ({ ...c })));
-      const cell = newBoard[row][col];
-      if (cell.isRevealed) return currentBoard;
-      cell.isFlagged = !cell.isFlagged;
+      toggleCellFlag(currentBoard, row, col);
       if (soundEnabled) playFlagSound();
-      return newBoard;
+      triggerReRender();
+      return currentBoard;
     });
-  }, [soundEnabled]);
+  }, [soundEnabled, triggerReRender]);
 
   const handleChord = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
 
     setBoard(currentBoard => {
-      const result = chordReveal(currentBoard, row, col, config);
+      const result = chordReveal(currentBoard, row, col);
       
       if (result.revealed.length === 0) return currentBoard;
 
@@ -214,10 +273,12 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
           time: 0,
           date: new Date().toISOString(),
         });
-        return revealAllMines(result.newBoard);
+        revealAllMines(currentBoard);
+        triggerReRender();
+        return currentBoard;
       }
 
-      if (checkWin(result.newBoard, config)) {
+      if (checkWin(currentBoard)) {
         setGameState('won');
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -232,21 +293,32 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         });
       }
 
-      return result.newBoard;
+      triggerReRender();
+      return currentBoard;
     });
-  }, [config, soundEnabled, playerName, difficulty]);
+  }, [soundEnabled, playerName, difficulty, triggerReRender]);
 
   const handleRestart = () => {
     if (soundEnabled) playClickSound();
-    setBoard(createBoard(config));
+    setBoard(createOptimizedBoard(config));
     setGameState('playing');
     setTimer(0);
     setFirstClick(true);
     setIsShaking(false);
+    setShowExplosionOverlay(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (explosionTimerRef.current) {
+      clearTimeout(explosionTimerRef.current);
+      explosionTimerRef.current = null;
+    }
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+      scrollContainerRef.current.scrollLeft = 0;
+    }
+    triggerReRender();
   };
 
   const toggleSound = () => {
@@ -261,6 +333,11 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     saveMusicPreference(newVal);
   };
 
+  const handleSwitchMelody = () => {
+    switchMelody(false);
+    if (soundEnabled) playClickSound();
+  };
+
   const flagCount = countFlags(board);
   const minesLeft = config.mines - flagCount;
 
@@ -270,7 +347,19 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  // Get visible cells for virtualization
+  const visibleCells = getVisibleCells(
+    board,
+    scrollTop,
+    scrollLeft,
+    viewportSize.height,
+    viewportSize.width,
+    cellSize,
+    GAME_CONSTANTS.VIRTUALIZATION.BUFFER_CELLS
+  );
 
+  const totalBoardWidth = config.cols * (cellSize + GAME_CONSTANTS.CELL_GAP) + GAME_CONSTANTS.CELL_GAP;
+  const totalBoardHeight = config.rows * (cellSize + GAME_CONSTANTS.CELL_GAP) + GAME_CONSTANTS.CELL_GAP;
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 overflow-hidden">
@@ -333,6 +422,13 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
               >
                 🎵 Музыка {musicEnabled ? 'ВКЛ' : 'ВЫКЛ'}
               </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSwitchMelody}
+                className="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white/5 text-white/50 border border-white/10 active:bg-white/10"
+              >
+                🎶 Мелодия
+              </motion.button>
               <div className="px-3 py-2 rounded-lg bg-white/5 text-white/60 text-xs sm:text-sm border border-white/10">
                 👤 {playerName} • {DIFFICULTY_LABELS[difficulty]}
               </div>
@@ -341,35 +437,44 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         )}
       </AnimatePresence>
 
-      {/* Game Board */}
-      <div className="flex-1 flex items-center justify-center overflow-auto py-2 px-1">
+      {/* Game Board - Virtualized */}
+      <div 
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-auto transition-all duration-500 ${
+          gameState === 'lost' ? 'opacity-70' : ''
+        }`}
+        onScroll={handleScroll}
+      >
         <motion.div
           animate={isShaking ? { x: [0, -5, 5, -5, 5, 0] } : {}}
           transition={{ duration: 0.4 }}
-          className="inline-block"
+          className="relative"
+          style={{
+            width: totalBoardWidth,
+            height: totalBoardHeight,
+          }}
         >
-          <div
-            className="grid bg-gray-700/40 rounded-lg p-[2px] border border-white/10"
-            style={{
-              gridTemplateColumns: `repeat(${config.cols}, ${cellSize}px)`,
-              gap: '1px',
-            }}
-          >
-            {board.map((row, r) =>
-              row.map((cell, c) => (
-                <CellComponent
-                  key={`${r}-${c}`}
-                  cell={cell}
-                  gameOver={gameState === 'lost'}
-                  gameWon={gameState === 'won'}
-                  onReveal={handleReveal}
-                  onFlag={handleFlag}
-                  onChord={handleChord}
-                  cellSize={cellSize}
-                />
-              ))
-            )}
-          </div>
+          {/* Render only visible cells */}
+          {visibleCells.map((cell) => (
+            <div
+              key={`${cell.row}-${cell.col}`}
+              style={{
+                position: 'absolute',
+                left: cell.col * (cellSize + GAME_CONSTANTS.CELL_GAP) + GAME_CONSTANTS.CELL_GAP,
+                top: cell.row * (cellSize + GAME_CONSTANTS.CELL_GAP) + GAME_CONSTANTS.CELL_GAP,
+              }}
+            >
+              <CellComponent
+                cell={cell}
+                gameOver={gameState === 'lost'}
+                gameWon={gameState === 'won'}
+                onReveal={handleReveal}
+                onFlag={handleFlag}
+                onChord={handleChord}
+                cellSize={cellSize}
+              />
+            </div>
+          ))}
         </motion.div>
       </div>
 
@@ -378,21 +483,45 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         Нажмите — открыть • Удерживайте — поставить флаг
       </div>
 
-      {/* Bottom bar - Restart */}
-      <div className="flex justify-center pb-2 shrink-0"
+      {/* Bottom bar */}
+      <div className="flex justify-center gap-2 pb-2 shrink-0 px-2"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={handleRestart}
-          className="px-5 py-2.5 rounded-xl bg-white/10 text-white/80 font-medium border border-white/10 text-sm active:bg-white/20"
-        >
-          🔄 Новая игра
-        </motion.button>
+        {gameState === 'lost' && !showExplosionOverlay && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-2"
+          >
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleRestart}
+              className="px-4 py-2.5 rounded-xl bg-red-500/20 text-red-300 font-medium border border-red-500/30 text-sm active:bg-red-500/30"
+            >
+              🔄 Заново
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={onBackToMenu}
+              className="px-4 py-2.5 rounded-xl bg-white/10 text-white/80 font-medium border border-white/10 text-sm active:bg-white/20"
+            >
+              ← В меню
+            </motion.button>
+          </motion.div>
+        )}
+        {gameState !== 'lost' && (
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleRestart}
+            className="px-5 py-2.5 rounded-xl bg-white/10 text-white/80 font-medium border border-white/10 text-sm active:bg-white/20"
+          >
+            🔄 Новая игра
+          </motion.button>
+        )}
       </div>
 
       {/* Game Over / Win Overlay */}
       <AnimatePresence>
-        {(gameState === 'won' || gameState === 'lost') && (
+        {(gameState === 'won' || (gameState === 'lost' && showExplosionOverlay)) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

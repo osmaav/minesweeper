@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlayerName, savePlayerName, getPlayerStats, getLeaderboard } from '../utils/cookies';
-import { Difficulty, DIFFICULTY_LABELS } from '../utils/gameLogic';
-import { playClickSound } from '../utils/sounds';
+import { 
+  type Difficulty, 
+  DIFFICULTY_LABELS, 
+  DIFFICULTY_ICONS, 
+  DIFFICULTY_DESCRIPTIONS 
+} from '../utils/constants';
+import { playClickSound, startBackgroundMusic, stopBackgroundMusic, switchMelody } from '../utils/sounds';
+import { getMusicPreference, saveMusicPreference } from '../utils/cookies';
 
 interface MenuProps {
   onStartGame: (difficulty: Difficulty, playerName: string) => void;
 }
 
-// Floating mine animation component
 function FloatingMine({ delay, x, size }: { delay: number; x: number; size: number }) {
   return (
     <motion.div
@@ -33,16 +38,37 @@ export default function Menu({ onStartGame }: MenuProps) {
   const [showStats, setShowStats] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy');
+  const [musicEnabled, setMusicEnabled] = useState(getMusicPreference());
 
   useEffect(() => {
     const saved = getPlayerName();
     if (saved) setPlayerName(saved);
   }, []);
 
+  useEffect(() => {
+    if (musicEnabled) {
+      startBackgroundMusic(true);
+    } else {
+      stopBackgroundMusic();
+    }
+    return () => stopBackgroundMusic();
+  }, [musicEnabled]);
+
+  const toggleMusic = useCallback(() => {
+    const newVal = !musicEnabled;
+    setMusicEnabled(newVal);
+    saveMusicPreference(newVal);
+    if (newVal) playClickSound();
+  }, [musicEnabled]);
+
+  const handleSwitchMelody = useCallback(() => {
+    switchMelody(true);
+    playClickSound();
+  }, []);
+
   const handleStart = useCallback(() => {
     if (!playerName.trim()) return;
     savePlayerName(playerName.trim());
-    // Initialize audio context on user interaction (required for iOS Safari)
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
@@ -57,16 +83,9 @@ export default function Menu({ onStartGame }: MenuProps) {
 
   const stats = playerName ? getPlayerStats(playerName) : null;
 
-  const difficulties: Difficulty[] = ['easy', 'medium', 'hard', 'super',];
-  const diffIcons: Record<Difficulty, string> = { easy: '😊', medium: '😎', hard: '🔥', super: '🤯', };
-  const diffDescriptions: Record<Difficulty, string> = {
-    easy: '9×9 • 10 мин',
-    medium: '16×16 • 40 мин',
-    hard: '16×30 • 99 мин',
-    super: '4100x4100 • 3 342 350 мин',
-  };
+  const difficulties: Difficulty[] = ['easy', 'medium', 'hard', 'super'];
 
-  const floatingMines = Array.from({ length: 32 }, (_, i) => ({
+  const floatingMines = Array.from({ length: 12 }, (_, i) => ({
     delay: i * 1.5,
     x: Math.random() * 90 + 5,
     size: Math.random() * 20 + 20,
@@ -74,12 +93,10 @@ export default function Menu({ onStartGame }: MenuProps) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 relative overflow-hidden">
-      {/* Floating mines background */}
       {floatingMines.map((mine, i) => (
         <FloatingMine key={i} {...mine} />
       ))}
 
-      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
       <motion.div
@@ -110,7 +127,6 @@ export default function Menu({ onStartGame }: MenuProps) {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-sm space-y-4 relative z-10"
           >
-            {/* Player Name Input */}
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
               <label className="block text-white/80 text-xs mb-2 font-medium uppercase tracking-wide">
                 👤 Имя игрока
@@ -126,8 +142,7 @@ export default function Menu({ onStartGame }: MenuProps) {
               />
             </div>
 
-            {/* Difficulty Selection */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20 max-h-[40vh] overflow-y-auto">
               <label className="block text-white/80 text-xs mb-3 font-medium uppercase tracking-wide">
                 🎯 Сложность
               </label>
@@ -143,10 +158,10 @@ export default function Menu({ onStartGame }: MenuProps) {
                         : 'bg-white/5 text-white/60 border-2 border-transparent hover:bg-white/10'
                     }`}
                   >
-                    <span className="text-xl">{diffIcons[diff]}</span>
+                    <span className="text-xl">{DIFFICULTY_ICONS[diff]}</span>
                     <div className="flex-1">
                       <div className="font-semibold">{DIFFICULTY_LABELS[diff]}</div>
-                      <div className="text-xs opacity-60">{diffDescriptions[diff]}</div>
+                      <div className="text-xs opacity-60">{DIFFICULTY_DESCRIPTIONS[diff]}</div>
                     </div>
                     {selectedDifficulty === diff && (
                       <motion.span
@@ -162,7 +177,6 @@ export default function Menu({ onStartGame }: MenuProps) {
               </div>
             </div>
 
-            {/* Start Button */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleStart}
@@ -176,7 +190,6 @@ export default function Menu({ onStartGame }: MenuProps) {
               🎮 Начать игру
             </motion.button>
 
-            {/* Stats & Leaderboard Buttons */}
             <div className="flex gap-3">
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -191,6 +204,27 @@ export default function Menu({ onStartGame }: MenuProps) {
                 className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium border border-white/10 active:bg-white/15"
               >
                 🏆 Рекорды
+              </motion.button>
+            </div>
+
+            <div className="flex gap-3">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={toggleMusic}
+                className={`flex-1 py-3 rounded-xl font-medium border transition-all ${
+                  musicEnabled 
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                    : 'bg-white/5 text-white/50 border-white/10'
+                }`}
+              >
+                {musicEnabled ? '🎵 ВКЛ' : '🔇 ВЫКЛ'}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSwitchMelody}
+                className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium border border-white/10 active:bg-white/15"
+              >
+                🎶 Мелодия
               </motion.button>
             </div>
           </motion.div>
@@ -221,7 +255,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                   {difficulties.map(diff => (
                     <div key={diff} className="flex justify-between items-center text-white/70 bg-white/5 rounded-lg px-3 py-2">
                       <span className="flex items-center gap-2">
-                        <span>{diffIcons[diff]}</span>
+                        <span>{DIFFICULTY_ICONS[diff]}</span>
                         <span>{DIFFICULTY_LABELS[diff]}</span>
                       </span>
                       <span className="font-mono text-yellow-400 font-bold">
@@ -259,7 +293,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                 return (
                   <div key={diff} className="mb-4">
                     <h3 className="text-white/70 font-medium mb-2 flex items-center gap-2">
-                      <span>{diffIcons[diff]}</span>
+                      <span>{DIFFICULTY_ICONS[diff]}</span>
                       <span>{DIFFICULTY_LABELS[diff]}</span>
                     </h3>
                     {board.length > 0 ? (

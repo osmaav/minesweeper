@@ -1,6 +1,8 @@
+import { type Difficulty } from './constants';
+
 export interface GameResult {
   playerName: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'super';
+  difficulty: Difficulty;
   time: number;
   date: string;
 }
@@ -9,9 +11,7 @@ export interface PlayerStats {
   gamesPlayed: number;
   gamesWon: number;
   bestTimes: {
-    easy: number | null;
-    medium: number | null;
-    hard: number | null;
+    [key in Difficulty]: number | null;
   };
 }
 
@@ -62,10 +62,11 @@ export function getPlayerStats(playerName: string): PlayerStats {
   const results = getResults().filter(r => r.playerName === playerName);
   const wins = results.filter(r => r.time > 0);
   
-  const bestTimes = {
-    easy: null as number | null,
-    medium: null as number | null,
-    hard: null as number | null,
+  const bestTimes: PlayerStats['bestTimes'] = {
+    easy: null,
+    medium: null,
+    hard: null,
+    super: null,
   };
 
   wins.forEach(r => {
@@ -82,7 +83,7 @@ export function getPlayerStats(playerName: string): PlayerStats {
   };
 }
 
-export function getLeaderboard(difficulty: 'easy' | 'medium' | 'hard' | 'super'): GameResult[] {
+export function getLeaderboard(difficulty: Difficulty): GameResult[] {
   return getResults()
     .filter(r => r.difficulty === difficulty && r.time > 0)
     .sort((a, b) => a.time - b.time)
@@ -95,7 +96,7 @@ export function saveSoundPreference(enabled: boolean) {
 
 export function getSoundPreference(): boolean {
   const val = getCookie('minesweeper_sound');
-  return val !== '0'; // Default to true
+  return val !== '0';
 }
 
 export function saveMusicPreference(enabled: boolean) {
@@ -104,5 +105,5 @@ export function saveMusicPreference(enabled: boolean) {
 
 export function getMusicPreference(): boolean {
   const val = getCookie('minesweeper_music');
-  return val !== '0'; // Default to true
+  return val !== '0';
 }

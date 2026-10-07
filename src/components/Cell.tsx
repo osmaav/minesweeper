@@ -1,9 +1,10 @@
 import { memo, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CellData } from '../utils/gameLogic';
+import { CellRenderData } from '../utils/gameLogic';
+import { GAME_CONSTANTS, NUMBER_COLORS } from '../utils/constants';
 
 interface CellProps {
-  cell: CellData;
+  cell: CellRenderData;
   gameOver: boolean;
   gameWon: boolean;
   onReveal: (row: number, col: number) => void;
@@ -11,17 +12,6 @@ interface CellProps {
   onChord: (row: number, col: number) => void;
   cellSize: number;
 }
-
-const NUMBER_COLORS: Record<number, string> = {
-  1: 'text-blue-600',
-  2: 'text-green-700',
-  3: 'text-red-600',
-  4: 'text-purple-700',
-  5: 'text-red-800',
-  6: 'text-teal-600',
-  7: 'text-gray-800',
-  8: 'text-gray-500',
-};
 
 function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cellSize }: CellProps) {
   const { row, col, isMine, isRevealed, isFlagged, adjacentMines } = cell;
@@ -57,9 +47,9 @@ function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cel
       setIsPressed(false);
       handleFlagAction();
       if (navigator.vibrate) {
-        navigator.vibrate(30);
+        navigator.vibrate(GAME_CONSTANTS.ANIMATION.SPRING_DAMPING);
       }
-    }, 500);
+    }, GAME_CONSTANTS.LONG_PRESS_DURATION);
   }, [handleFlagAction]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -67,7 +57,8 @@ function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cel
       const touch = e.touches[0];
       const dx = Math.abs(touch.clientX - touchStartPos.current.x);
       const dy = Math.abs(touch.clientY - touchStartPos.current.y);
-      if (dx > 10 || dy > 10) {
+      if (dx > GAME_CONSTANTS.VIRTUALIZATION.SCROLL_THRESHOLD || 
+          dy > GAME_CONSTANTS.VIRTUALIZATION.SCROLL_THRESHOLD) {
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
           longPressTimer.current = null;
@@ -158,7 +149,11 @@ function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cel
       <motion.span
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: GAME_CONSTANTS.ANIMATION.SPRING_STIFFNESS, 
+          damping: GAME_CONSTANTS.ANIMATION.SPRING_DAMPING 
+        }}
         className={`${isRevealed && !isMine && adjacentMines > 0 ? NUMBER_COLORS[adjacentMines] || '' : ''} pointer-events-none`}
       >
         {getContent()}

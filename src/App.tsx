@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Menu from './components/Menu';
 import Game from './components/Game';
-import { Difficulty } from './utils/gameLogic';
+import { type Difficulty } from './utils/constants';
 
 type Screen = 'menu' | 'game';
 
