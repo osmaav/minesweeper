@@ -103,7 +103,7 @@ export default function Menu({ onStartGame }: MenuProps) {
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-center mb-2 mt-5 relative z-10"
+        className="text-center mb-2 mt-25 relative z-10"
       >
         <motion.div
           animate={{ rotate: [0, -10, 10, -10, 0] }}
