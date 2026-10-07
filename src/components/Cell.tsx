@@ -11,9 +11,10 @@ interface CellProps {
   onFlag: (row: number, col: number) => void;
   onChord: (row: number, col: number) => void;
   cellSize: number;
+  miniMapMode?: boolean; // Режим мини-карты (открытые ячейки зелёные)
 }
 
-function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cellSize }: CellProps) {
+function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cellSize, miniMapMode = false }: CellProps) {
   const { row, col, isMine, isRevealed, isFlagged, adjacentMines } = cell;
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress = useRef(false);
@@ -113,7 +114,9 @@ function CellComponent({ cell, gameOver, gameWon, onReveal, onFlag, onChord, cel
             ? gameWon
               ? 'bg-green-200'
               : 'bg-red-300'
-            : 'bg-gray-100'
+            : miniMapMode
+              ? 'bg-green-400'
+              : 'bg-gray-100'
           : isPressed
             ? 'bg-gradient-to-br from-yellow-200 to-yellow-300 scale-95'
             : 'bg-gradient-to-br from-slate-200 to-slate-300'

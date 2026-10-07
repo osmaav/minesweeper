@@ -116,46 +116,94 @@ let musicPlaying = false;
 let currentMelodyIndex = 0;
 let melodyTimeout: number | null = null;
 
-const gameMelodies = [
-  {
-  // Правая рука (мелодия)
-  notes: [
-    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
-    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
-  ],
-  // Левая рука (аккорды на фоне) - массив такой же длины
-  chords: [
-    // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
-    164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
-    // Под Am и Bm во второй половине
-    220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
-  ],
-  tempo: 0.2,
-  type: 'square' as OscillatorType,
-  chordType: 'square' as OscillatorType // Мягкий тип волны для баса, чтобы не заглушал мелодию
+interface Melody {
+  notes: number[];
+  chords?: number[];
+  tempo: number;
+  type: OscillatorType;
+  chordType?: OscillatorType;
+}
+
+const gameMelodies: Melody[] = [
+   {
+    // Правая рука (мелодия остается в 4-й октаве для контраста)
+    notes: [
+      392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
+      392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
+    ],
+    // Левая рука (бас в Большой октаве — звучит тяжело и зловеще)
+    chords: [
+      // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
+      164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
+      // Под Am и Bm во второй половине
+      220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
+    ],
+    tempo: 0.2,
+    type: 'square',
+    chordType: 'square'
   },
 ];
 
-const menuMelodies = [
-
+const menuMelodies: Melody[] = [
+  // {
+  //   // Правая рука (мелодия остается в 4-й октаве для контраста)
+  //   notes: [
+  //     392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
+  //     392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
+  //   ],
+  //   // Левая рука (бас в Большой октаве — звучит тяжело и зловеще)
+  //   chords: [
+  //     // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
+  //     164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
+  //     // Под Am и Bm во второй половине
+  //     220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
+  //   ],
+  //   tempo: 0.2,
+  //   type: 'square',
+  //   chordType: 'square'
+  // },
+  
 {
-  // Правая рука (мелодия остается в 4-й октаве для контраста)
+  // "К Элизе" — Полная версия (Правая рука)
   notes: [
-    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
-    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
+    // [ЧАСТЬ 1] Главная тема (Первое предложение)
+    659.25, 622.25, 659.25, 622.25, 659.25, 493.88, 587.33, 523.25, 440.00, 0, 
+    261.63, 329.63, 440.00, 493.88, 0, 329.63, 415.30, 493.88, 523.25, 0,
+    
+    // [ЧАСТЬ 2] Главная тема (Второе предложение, уход наверх)
+    329.63, 659.25, 622.25, 659.25, 622.25, 659.25, 493.88, 587.33, 523.25, 440.00,
+    0, 261.63, 329.63, 440.00, 493.88, 0, 329.63, 523.25, 493.88, 440.00, 0,
+    
+    // [ЧАСТЬ 3] Классический мажорный переход (Кульминация)
+    493.88, 523.25, 587.33, 659.25, 0, 783.99, 698.46, 659.25, 587.33, 0,
+    659.25, 587.33, 523.25, 493.88, 0, 587.33, 523.25, 493.88, 440.00, 0,
+    
+    // [ЧАСТЬ 4] Возврат к главной теме и логический финал
+    329.63, 659.25, 622.25, 659.25, 622.25, 659.25, 493.88, 587.33, 523.25, 440.00, 0,
+    261.63, 329.63, 440.00, 493.88, 0, 329.63, 523.25, 493.88, 440.00, 0, 0, 0, 0
   ],
-  // Левая рука (бас в Большой октаве — звучит тяжело и зловеще)
+  // Левая рука (Полное гармоническое сопровождение, 85 шагов)
   chords: [
-  // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
-    164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
-    // Под Am и Bm во второй половине
-    220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
+    // Под ЧАСТЬ 1
+    0, 0, 0, 0, 0, 0, 0, 0, 110.00, 164.81, 
+    261.63, 0, 0, 123.47, 164.81, 246.94, 329.63, 0, 110.00, 164.81, 
+    
+    // Под ЧАСТЬ 2
+    261.63, 0, 0, 0, 0, 0, 0, 0, 0, 110.00,
+    164.81, 261.63, 0, 0, 123.47, 164.81, 246.94, 329.63, 0, 110.00, 164.81,
+    
+    // Под ЧАСТЬ 3
+    261.63, 0, 0, 130.81, 196.00, 329.63, 0, 0, 0, 146.83,
+    220.00, 293.66, 0, 0, 0, 164.81, 246.94, 329.63, 0, 0,
+    
+    // Под ЧАСТЬ 4
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 110.00, 164.81,
+    261.63, 0, 0, 123.47, 164.81, 246.94, 329.63, 0, 110.00, 0, 0, 0, 0, 0
   ],
-  tempo: 0.2,
-  type: 'square' as OscillatorType,
-  chordType: 'square' as OscillatorType
-},
-
+  tempo: 0.2,                         // Слегка ускорили темп для сохранения динамики
+  type: 'sine' as OscillatorType,      // Имитация мягкого пианино
+  chordType: 'sine' as OscillatorType  // Глубокий, чистый бас без хрипов
+}
 
 ];
 
@@ -171,94 +219,91 @@ export function startBackgroundMusic(isMenu: boolean = false) {
   const melodies = isMenu ? menuMelodies : gameMelodies;
   currentMelodyIndex = Math.floor(Math.random() * melodies.length);
 
-  
-function playMelodyLoop() {
-  const melody = melodies[currentMelodyIndex];
-  const now = ctx.currentTime;
-  const noteLength = melody.tempo;
-  // СОЗДАЕМ ЭФФЕКТ ЭХА (DELAY)
-  // Создаем узел задержки и узел громкости для хвоста эха
-  const delayNode = ctx.createDelay();
-  const delayGain = ctx.createGain();
+  function playMelodyLoop() {
+    if (!musicPlaying || !musicGain) return;
+    
+    const melody = melodies[currentMelodyIndex];
+    const now = ctx.currentTime;
+    const noteLength = melody.tempo;
+    
+    // Создаём эффект эха (delay)
+    const delayNode = ctx.createDelay();
+    const delayGain = ctx.createGain();
+    
+    delayNode.delayTime.setValueAtTime(noteLength, now);
+    delayGain.gain.setValueAtTime(0.35, now);
+    
+    // Соединяем цепочку эха
+    delayNode.connect(delayGain);
+    delayGain.connect(musicGain);
+    delayGain.connect(delayNode); // Обратная связь для красивого хвоста
 
-  // Настраиваем время задержки (ровно на длину одной ноты)
-  delayNode.delayTime.setValueAtTime(noteLength, now);
-  // Настраиваем громкость эха (0.35 — повторы будут примерно на 65% тише оригинала)
-  delayGain.gain.setValueAtTime(0.35, now);
+    // Вычисляем максимальную длину, чтобы не потерять ноты баса или мелодии
+    const chordsLen = ('chords' in melody && melody.chords) ? melody.chords.length : 0;
+    const maxLength = Math.max(melody.notes.length, chordsLen);
 
-  // Соединяем цепочку: звук из эха идет в регулятор громкости эха, а затем в общий микс
-  delayNode.connect(delayGain);
-  delayGain.connect(musicGain!);
-  
-  // Добавляем небольшую обратную связь (feedback), чтобы эхо повторялось чуть больше одного раза
-  delayGain.connect(delayNode);
+    // Заменяем forEach на классический for, чтобы пройти по всей длине трека
+    for (let i = 0; i < maxLength; i++) {
+      const freq = melody.notes[i] || 0;
 
+      // 1. ИГРАЕМ ПРАВУЮ РУКУ (МЕЛОДИЯ)
+      if (freq !== 0) {
+        const osc = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+       
+        osc.connect(noteGain);
+        noteGain.connect(musicGain); 
+        noteGain.connect(delayNode); 
 
+        osc.type = melody.type;
+        osc.frequency.setValueAtTime(freq, now + i * noteLength);
+        
+        noteGain.gain.setValueAtTime(0, now + i * noteLength);
+        noteGain.gain.linearRampToValueAtTime(0.45, now + i * noteLength + 0.01); 
+        noteGain.gain.linearRampToValueAtTime(0.25, now + i * noteLength + noteLength * 0.6); 
+        noteGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength); 
+        
+        osc.start(now + i * noteLength);
+        osc.stop(now + i * noteLength + noteLength);
+        musicOscillators.push(osc);
+      }
 
-  melody.notes.forEach((freq, i) => {
-    // 1. ИГРАЕМ ПРАВУЮ РУКУ (МЕЛОДИЯ)
-    if (freq !== 0) {
-      const osc = ctx.createOscillator();
-      const noteGain = ctx.createGain();
-     
-      osc.connect(noteGain);
-      // Оригинальный (сухой) звук идет напрямую в общий микс
-      noteGain.connect(musicGain!); 
-      // Этот же звук отправляем в линию эха
-      noteGain.connect(delayNode); 
+      // 2. ИГРАЕМ ЛЕВУЮ РУКУ (АККОРДЫ / БАС)
+      if ('chords' in melody && melody.chords && melody.chords[i] && melody.chords[i] !== 0) {
+        const chordFreq = melody.chords[i];
+        const chordOsc = ctx.createOscillator();
+        const chordGain = ctx.createGain();
 
-      osc.type = melody.type;
-      osc.frequency.setValueAtTime(freq, now + i * noteLength);
-      
-      noteGain.gain.setValueAtTime(0, now + i * noteLength);
-      // Быстрая атака для щелчка
-      noteGain.gain.linearRampToValueAtTime(0.45, now + i * noteLength + 0.01); 
-      // Поддержка тона
-      noteGain.gain.linearRampToValueAtTime(0.25, now + i * noteLength + noteLength * 0.6); 
-      // Угасание к концу ноты
-      noteGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength); 
-            osc.start(now + i * noteLength);
-      osc.stop(now + i * noteLength + noteLength);
-      musicOscillators.push(osc);
+        chordOsc.connect(chordGain);
+        chordGain.connect(musicGain);
+
+        chordOsc.type = (melody as any).chordType || 'triangle'; 
+        chordOsc.frequency.setValueAtTime(chordFreq, now + i * noteLength);
+
+        // ИСПРАВЛЕНО: Изменяем chordGain вместо несуществующей noteGain
+        chordGain.gain.setValueAtTime(0, now + i * noteLength);
+        chordGain.gain.linearRampToValueAtTime(0.12, now + i * noteLength + 0.03);
+        chordGain.gain.linearRampToValueAtTime(0.10, now + i * noteLength + noteLength * 0.8);
+        chordGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
+
+        chordOsc.start(now + i * noteLength);
+        chordOsc.stop(now + i * noteLength + noteLength);
+        musicOscillators.push(chordOsc); 
+      }
     }
 
-    // 2. ИГРАЕМ ЛЕВУЮ РУКУ (АККОРДЫ / БАС)
-    // Проверяем, есть ли аккорды у этой мелодии, и не равны ли они 0
-    if ('chords' in melody && melody.chords && melody.chords[i] !== 0) {
-      const chordFreq = melody.chords[i];
-      const chordOsc = ctx.createOscillator();
-      const chordGain = ctx.createGain();
-      
-      chordOsc.connect(chordGain);
-      chordGain.connect(musicGain!);
-      // Используем chordType из объекта или падаем на обычный triangle
-      chordOsc.type = (melody as any).chordType || 'triangle'; 
-      chordOsc.frequency.setValueAtTime(chordFreq, now + i * noteLength);
-      
-      // Настройки громкости баса (делаем его тише правой руки, например, max 0.2)
-      chordGain.gain.setValueAtTime(0, now + i * noteLength);
-      // Более плавная атака (0.03), чтобы низкие частоты не "щелкали" по ушам
-      chordGain.gain.linearRampToValueAtTime(0.12, now + i * noteLength + 0.03);
-      // Бас удерживает ровную громкость почти до самого конца шага
-      chordGain.gain.linearRampToValueAtTime(0.10, now + i * noteLength + noteLength * 0.8);
-      chordGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
-      
-      chordOsc.start(now + i * noteLength);
-      chordOsc.stop(now + i * noteLength + noteLength);
-      musicOscillators.push(chordOsc); // Добавляем в общий массив для очистки при остановке
-    }
-  });
-
-  melodyTimeout = window.setTimeout(() => {
-    if (musicPlaying) {
-      currentMelodyIndex = (currentMelodyIndex + 1) % melodies.length;
-      playMelodyLoop();
-    }
-  }, melody.notes.length * noteLength * 1000);
-}
+    // Планируем следующий цикл по максимальной длине трека
+    melodyTimeout = window.setTimeout(() => {
+      if (musicPlaying) {
+        currentMelodyIndex = (currentMelodyIndex + 1) % melodies.length;
+        playMelodyLoop();
+      }
+    }, maxLength * noteLength * 1000);
+  }
 
   playMelodyLoop();
 }
+
 
 export function stopBackgroundMusic() {
   musicPlaying = false;

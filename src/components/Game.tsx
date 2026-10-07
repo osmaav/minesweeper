@@ -61,6 +61,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const [scrollLeft, setScrollLeft] = useState(0);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1); // 1 = нормальный масштаб
   
   const timerRef = useRef<number | null>(null);
   const explosionTimerRef = useRef<number | null>(null);
@@ -68,30 +69,35 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const firstClickRef = useRef(firstClick);
   const timerValueRef = useRef(timer);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const pinchStartDistance = useRef<number | null>(null);
+  const pinchStartZoom = useRef<number>(1);
 
   // Keep refs in sync
   useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
   useEffect(() => { firstClickRef.current = firstClick; }, [firstClick]);
   useEffect(() => { timerValueRef.current = timer; }, [timer]);
 
-  // Calculate cell size based on screen
+  // Calculate cell size based on screen and zoom
   useEffect(() => {
     function calculateCellSize() {
       const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-      const padding = 24;
-      const headerHeight = 60;
-      const footerHeight = 60;
-      const availableWidth = screenWidth - padding;
-      const availableHeight = screenHeight - headerHeight - footerHeight - padding;
+      const padding = screenWidth * 0.05; // 5% отступы по бокам
+      const availableWidth = screenWidth - padding * 2;
       
-      // For super difficulty, use smaller cells
-      const maxSize = difficulty === 'super' ? 20 : GAME_CONSTANTS.CELL_SIZE_MAX;
+      // Базовый размер: 20 столбцов на экран при zoom = 1
+      const baseCellSize = availableWidth / 20;
       
-      const sizeByWidth = Math.floor(availableWidth / Math.min(config.cols, 30));
-      const sizeByHeight = Math.floor(availableHeight / Math.min(config.rows, 20));
-      const size = Math.min(sizeByWidth, sizeByHeight, maxSize);
-      setCellSize(Math.max(size, GAME_CONSTANTS.CELL_SIZE_MIN));
+      // Применяем zoom
+      const zoomedCellSize = baseCellSize * zoomLevel;
+      
+      // Ограничения:
+      // Минимум: 200 столбцов на экран (очень мелко)
+      // Максимум: 9 столбцов на экран (очень крупно)
+      const minCellSize = availableWidth / 200;
+      const maxCellSize = availableWidth / 9;
+      
+      const finalSize = Math.max(minCellSize, Math.min(maxCellSize, zoomedCellSize));
+      setCellSize(finalSize);
     }
     calculateCellSize();
     window.addEventListener('resize', calculateCellSize);
@@ -100,7 +106,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       window.removeEventListener('resize', calculateCellSize);
       window.removeEventListener('orientationchange', calculateCellSize);
     };
-  }, [config, difficulty]);
+  }, [config, zoomLevel]);
 
   // Viewport size tracking
   useEffect(() => {
@@ -120,6 +126,40 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     if (scrollContainerRef.current) {
       setScrollTop(scrollContainerRef.current.scrollTop);
       setScrollLeft(scrollContainerRef.current.scrollLeft);
+    }
+  }, []);
+
+  // Pinch zoom handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDistance.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartZoom.current = zoomLevel;
+    }
+  }, [zoomLevel]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistance.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const currentDistance = Math.sqrt(dx * dx + dy * dy);
+      const scale = currentDistance / pinchStartDistance.current;
+      const newZoom = pinchStartZoom.current * scale;
+      
+      // Ограничения zoom:
+      // Минимум: 200 столбцов на экран (zoom = 20/200 = 0.1)
+      // Максимум: 9 столбцов на экран (zoom = 20/9 ≈ 2.22)
+      const minZoom = 20 / 200; // 0.1
+      const maxZoom = 20 / 9;   // ≈ 2.22
+      setZoomLevel(Math.max(minZoom, Math.min(maxZoom, newZoom)));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchStartDistance.current = null;
     }
   }, []);
 
@@ -443,7 +483,15 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         className={`flex-1 overflow-auto transition-all duration-500 ${
           gameState === 'lost' ? 'opacity-70' : ''
         }`}
+        style={{ 
+          marginTop: '5vh', 
+          marginBottom: '5vh',
+          touchAction: 'pan-x pan-y'
+        }}
         onScroll={handleScroll}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <motion.div
           animate={isShaking ? { x: [0, -5, 5, -5, 5, 0] } : {}}
@@ -472,6 +520,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
                 onFlag={handleFlag}
                 onChord={handleChord}
                 cellSize={cellSize}
+                miniMapMode={zoomLevel < 1}
               />
             </div>
           ))}
