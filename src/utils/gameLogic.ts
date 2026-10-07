@@ -19,7 +19,7 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, GameConfig> = {
   easy: { rows: 9, cols: 9, mines: 10 },
   medium: { rows: 16, cols: 16, mines: 40 },
   hard: { rows: 16, cols: 30, mines: 99 },
-  super: { rows: 4100, cols: 4100, mines: 3342350}
+  super: { rows: 410, cols: 410, mines: 3342}
 };
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {

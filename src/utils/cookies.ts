@@ -1,6 +1,6 @@
 export interface GameResult {
   playerName: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard' | 'super';
   time: number;
   date: string;
 }
@@ -82,7 +82,7 @@ export function getPlayerStats(playerName: string): PlayerStats {
   };
 }
 
-export function getLeaderboard(difficulty: 'easy' | 'medium' | 'hard'): GameResult[] {
+export function getLeaderboard(difficulty: 'easy' | 'medium' | 'hard' | 'super'): GameResult[] {
   return getResults()
     .filter(r => r.difficulty === difficulty && r.time > 0)
     .sort((a, b) => a.time - b.time)
