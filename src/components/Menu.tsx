@@ -57,8 +57,8 @@ export default function Menu({ onStartGame }: MenuProps) {
 
   const stats = playerName ? getPlayerStats(playerName) : null;
 
-  const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
-  const diffIcons: Record<Difficulty, string> = { easy: '😊', medium: '😎', hard: '🔥' };
+  const difficulties: Difficulty[] = ['easy', 'medium', 'hard', 'super',];
+  const diffIcons: Record<Difficulty, string> = { easy: '😊', medium: '😎', hard: '🔥', super: '🤯', };
   const diffDescriptions: Record<Difficulty, string> = {
     easy: '9×9 • 10 мин',
     medium: '16×16 • 40 мин',
@@ -66,7 +66,7 @@ export default function Menu({ onStartGame }: MenuProps) {
     super: '4100x4100 • 3 342 350 мин',
   };
 
-  const floatingMines = Array.from({ length: 12 }, (_, i) => ({
+  const floatingMines = Array.from({ length: 32 }, (_, i) => ({
     delay: i * 1.5,
     x: Math.random() * 90 + 5,
     size: Math.random() * 20 + 20,
