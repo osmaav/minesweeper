@@ -117,26 +117,38 @@ let currentMelodyIndex = 0;
 let melodyTimeout: number | null = null;
 
 const gameMelodies = [
-  { notes: [523, 587, 659, 698, 784, 698, 659, 587, 523, 587, 659, 784, 880, 784, 659, 523], tempo: MELODY_TEMPOS.MEDIUM, type: 'sine' as OscillatorType },
-  { notes: [262, 330, 392, 523, 392, 330, 262, 330, 392, 523, 659, 523, 392, 330, 262, 330], tempo: 0.25, type: 'triangle' as OscillatorType },
-  { notes: [659, 0, 784, 0, 880, 784, 0, 659, 0, 587, 0, 523, 587, 659, 0, 784], tempo: MELODY_TEMPOS.FAST, type: 'square' as OscillatorType },
-  { notes: [262, 294, 330, 349, 392, 440, 494, 523, 494, 440, 392, 349, 330, 294, 262, 294], tempo: 0.35, type: 'sine' as OscillatorType },
-  { notes: [523, 523, 0, 659, 0, 784, 784, 0, 659, 0, 523, 523, 0, 659, 784, 880], tempo: 0.22, type: 'triangle' as OscillatorType },
-  { notes: [784, 880, 988, 1047, 988, 880, 784, 880, 784, 659, 587, 523, 587, 659, 784, 880], tempo: 0.4, type: 'sine' as OscillatorType },
-  { notes: [392, 392, 440, 523, 523, 440, 392, 330, 262, 262, 330, 392, 392, 330, 330, 262], tempo: MELODY_TEMPOS.MEDIUM, type: 'square' as OscillatorType },
-  { notes: [523, 784, 659, 880, 523, 784, 659, 880, 523, 659, 784, 880, 1047, 880, 784, 659], tempo: 0.28, type: 'triangle' as OscillatorType },
-  { notes: [659, 0, 784, 0, 880, 0, 784, 659, 0, 523, 0, 587, 0, 659, 0, 784], tempo: MELODY_TEMPOS.SLOW, type: 'sine' as OscillatorType },
-  { notes: [440, 494, 523, 587, 659, 587, 523, 494, 440, 494, 523, 659, 784, 659, 523, 440], tempo: 0.32, type: 'triangle' as OscillatorType },
-  { notes: [523, 659, 784, 1047, 784, 659, 523, 659, 784, 659, 523, 440, 523, 587, 659, 784], tempo: 0.26, type: 'square' as OscillatorType },
-  { notes: [392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 587, 659, 587, 494, 392], tempo: 0.38, type: 'sine' as OscillatorType },
+  {
+  // L's Theme: Первая половина (13 нот) + Вторая половина с концовкой (14 нот)
+    notes: [
+      // 1-я половина
+      392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
+      // 2-я половина
+      392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
+    ],
+    tempo: 0.2, // Быстрый темп для оригинального звучания
+    type: 'square' as OscillatorType // Тип 'square' (меандр) идеально имитирует 8-битный/синтезаторный звук
+  },
 ];
 
 const menuMelodies = [
-  { notes: [523, 659, 784, 880, 784, 659, 523, 0, 587, 698, 880, 988, 880, 698, 587, 0], tempo: 0.5, type: 'sine' as OscillatorType },
-  { notes: [330, 392, 494, 392, 330, 262, 330, 392, 494, 587, 494, 392, 330, 262, 330, 0], tempo: 0.6, type: 'triangle' as OscillatorType },
-  { notes: [262, 330, 392, 523, 659, 784, 659, 523, 392, 330, 262, 330, 392, 523, 392, 262], tempo: 0.55, type: 'sine' as OscillatorType },
-  { notes: [784, 880, 988, 1047, 988, 880, 784, 0, 659, 784, 880, 988, 880, 784, 659, 0], tempo: 0.48, type: 'triangle' as OscillatorType },
-  { notes: [440, 523, 659, 784, 880, 784, 659, 523, 440, 523, 659, 784, 659, 523, 440, 0], tempo: 0.52, type: 'sine' as OscillatorType },
+{
+  // Правая рука (мелодия)
+  notes: [
+    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
+    392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
+  ],
+  // Левая рука (аккорды на фоне) - массив такой же длины
+  chords: [
+    // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
+    164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
+    // Под Am и Bm во второй половине
+    220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
+  ],
+  tempo: 0.2,
+  type: 'square' as OscillatorType,
+  chordType: 'triangle' as OscillatorType // Мягкий тип волны для баса, чтобы не заглушал мелодию
+},
+
 ];
 
 export function startBackgroundMusic(isMenu: boolean = false) {
@@ -151,16 +163,15 @@ export function startBackgroundMusic(isMenu: boolean = false) {
   const melodies = isMenu ? menuMelodies : gameMelodies;
   currentMelodyIndex = Math.floor(Math.random() * melodies.length);
 
-  function playMelodyLoop() {
-    if (!musicPlaying || !musicGain) return;
-    
-    const melody = melodies[currentMelodyIndex];
-    const now = ctx.currentTime;
-    const noteLength = melody.tempo;
-    
-    melody.notes.forEach((freq, i) => {
-      if (freq === 0) return;
-      
+  
+function playMelodyLoop() {
+  const melody = melodies[currentMelodyIndex];
+  const now = ctx.currentTime;
+  const noteLength = melody.tempo;
+  
+  melody.notes.forEach((freq, i) => {
+    // 1. ИГРАЕМ ПРАВУЮ РУКУ (МЕЛОДИЯ)
+    if (freq !== 0) {
       const osc = ctx.createOscillator();
       const noteGain = ctx.createGain();
       osc.connect(noteGain);
@@ -168,23 +179,49 @@ export function startBackgroundMusic(isMenu: boolean = false) {
       osc.type = melody.type;
       osc.frequency.setValueAtTime(freq, now + i * noteLength);
       
+      // Атака и затухание для правой руки
       noteGain.gain.setValueAtTime(0, now + i * noteLength);
-      noteGain.gain.linearRampToValueAtTime(0.6, now + i * noteLength + 0.05);
-      noteGain.gain.linearRampToValueAtTime(0.4, now + i * noteLength + noteLength * 0.7);
+      noteGain.gain.linearRampToValueAtTime(0.7, now + i * noteLength + 0.02);
+      noteGain.gain.linearRampToValueAtTime(0.5, now + i * noteLength + noteLength * 0.7);
       noteGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
       
       osc.start(now + i * noteLength);
       osc.stop(now + i * noteLength + noteLength);
       musicOscillators.push(osc);
-    });
+    }
 
-    melodyTimeout = window.setTimeout(() => {
-      if (musicPlaying) {
-        currentMelodyIndex = (currentMelodyIndex + 1) % melodies.length;
-        playMelodyLoop();
-      }
-    }, melody.notes.length * noteLength * 1000);
-  }
+    // 2. ИГРАЕМ ЛЕВУЮ РУКУ (АККОРДЫ / БАС)
+    // Проверяем, есть ли аккорды у этой мелодии, и не равны ли они 0
+    if ('chords' in melody && melody.chords && melody.chords[i] !== 0) {
+      const chordFreq = melody.chords[i];
+      const chordOsc = ctx.createOscillator();
+      const chordGain = ctx.createGain();
+      
+      chordOsc.connect(chordGain);
+      chordGain.connect(musicGain!);
+      // Используем chordType из объекта или падаем на обычный triangle
+      chordOsc.type = (melody as any).chordType || 'triangle'; 
+      chordOsc.frequency.setValueAtTime(chordFreq, now + i * noteLength);
+      
+      // Настройки громкости баса (делаем его тише правой руки, например, max 0.2)
+      chordGain.gain.setValueAtTime(0, now + i * noteLength);
+      chordGain.gain.linearRampToValueAtTime(0.5, now + i * noteLength + 0.01);
+      chordGain.gain.linearRampToValueAtTime(0.3, now + i * noteLength + noteLength * 0.9);
+      chordGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
+      
+      chordOsc.start(now + i * noteLength);
+      chordOsc.stop(now + i * noteLength + noteLength);
+      musicOscillators.push(chordOsc); // Добавляем в общий массив для очистки при остановке
+    }
+  });
+
+  melodyTimeout = window.setTimeout(() => {
+    if (musicPlaying) {
+      currentMelodyIndex = (currentMelodyIndex + 1) % melodies.length;
+      playMelodyLoop();
+    }
+  }, melody.notes.length * noteLength * 1000);
+}
 
   playMelodyLoop();
 }
