@@ -63,6 +63,7 @@ export default function Menu({ onStartGame }: MenuProps) {
     easy: '9×9 • 10 мин',
     medium: '16×16 • 40 мин',
     hard: '16×30 • 99 мин',
+    super: '4100x4100 • 3 342 350 мин',
   };
 
   const floatingMines = Array.from({ length: 12 }, (_, i) => ({
