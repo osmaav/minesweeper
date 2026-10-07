@@ -132,28 +132,30 @@ const gameMelodies = [
   ],
   tempo: 0.2,
   type: 'square' as OscillatorType,
-  chordType: 'triangle' as OscillatorType // Мягкий тип волны для баса, чтобы не заглушал мелодию
+  chordType: 'square' as OscillatorType // Мягкий тип волны для баса, чтобы не заглушал мелодию
   },
 ];
 
 const menuMelodies = [
+
 {
-  // Правая рука (мелодия)
+  // Правая рука (мелодия остается в 4-й октаве для контраста)
   notes: [
     392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66,
     392, 329.63, 440, 329.63, 369.99, 392, 329.63, 493.88, 440, 392, 369.99, 329.63, 293.66, 329.63
   ],
-  // Левая рука (аккорды на фоне) - массив такой же длины
+  // Левая рука (бас в Большой октаве — звучит тяжело и зловеще)
   chords: [
-    // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
+  // Под Em: 6 нот звучит E (164.81), следующие 7 нот звучит B (246.94)
     164.81, 164.81, 164.81, 164.81, 164.81, 164.81, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94,
     // Под Am и Bm во второй половине
     220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
   ],
   tempo: 0.2,
   type: 'square' as OscillatorType,
-  chordType: 'triangle' as OscillatorType // Мягкий тип волны для баса, чтобы не заглушал мелодию
+  chordType: 'square' as OscillatorType
 },
+
 
 ];
 
@@ -174,24 +176,48 @@ function playMelodyLoop() {
   const melody = melodies[currentMelodyIndex];
   const now = ctx.currentTime;
   const noteLength = melody.tempo;
+  // СОЗДАЕМ ЭФФЕКТ ЭХА (DELAY)
+  // Создаем узел задержки и узел громкости для хвоста эха
+  const delayNode = ctx.createDelay();
+  const delayGain = ctx.createGain();
+
+  // Настраиваем время задержки (ровно на длину одной ноты)
+  delayNode.delayTime.setValueAtTime(noteLength, now);
+  // Настраиваем громкость эха (0.35 — повторы будут примерно на 65% тише оригинала)
+  delayGain.gain.setValueAtTime(0.35, now);
+
+  // Соединяем цепочку: звук из эха идет в регулятор громкости эха, а затем в общий микс
+  delayNode.connect(delayGain);
+  delayGain.connect(musicGain!);
   
+  // Добавляем небольшую обратную связь (feedback), чтобы эхо повторялось чуть больше одного раза
+  delayGain.connect(delayNode);
+
+
+
   melody.notes.forEach((freq, i) => {
     // 1. ИГРАЕМ ПРАВУЮ РУКУ (МЕЛОДИЯ)
     if (freq !== 0) {
       const osc = ctx.createOscillator();
       const noteGain = ctx.createGain();
+     
       osc.connect(noteGain);
-      noteGain.connect(musicGain!);
+      // Оригинальный (сухой) звук идет напрямую в общий микс
+      noteGain.connect(musicGain!); 
+      // Этот же звук отправляем в линию эха
+      noteGain.connect(delayNode); 
+
       osc.type = melody.type;
       osc.frequency.setValueAtTime(freq, now + i * noteLength);
       
-      // Атака и затухание для правой руки
       noteGain.gain.setValueAtTime(0, now + i * noteLength);
-      noteGain.gain.linearRampToValueAtTime(0.7, now + i * noteLength + 0.02);
-      noteGain.gain.linearRampToValueAtTime(0.5, now + i * noteLength + noteLength * 0.7);
-      noteGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
-      
-      osc.start(now + i * noteLength);
+      // Быстрая атака для щелчка
+      noteGain.gain.linearRampToValueAtTime(0.45, now + i * noteLength + 0.01); 
+      // Поддержка тона
+      noteGain.gain.linearRampToValueAtTime(0.25, now + i * noteLength + noteLength * 0.6); 
+      // Угасание к концу ноты
+      noteGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength); 
+            osc.start(now + i * noteLength);
       osc.stop(now + i * noteLength + noteLength);
       musicOscillators.push(osc);
     }
@@ -211,8 +237,10 @@ function playMelodyLoop() {
       
       // Настройки громкости баса (делаем его тише правой руки, например, max 0.2)
       chordGain.gain.setValueAtTime(0, now + i * noteLength);
-      chordGain.gain.linearRampToValueAtTime(0.5, now + i * noteLength + 0.01);
-      chordGain.gain.linearRampToValueAtTime(0.3, now + i * noteLength + noteLength * 0.9);
+      // Более плавная атака (0.03), чтобы низкие частоты не "щелкали" по ушам
+      chordGain.gain.linearRampToValueAtTime(0.12, now + i * noteLength + 0.03);
+      // Бас удерживает ровную громкость почти до самого конца шага
+      chordGain.gain.linearRampToValueAtTime(0.10, now + i * noteLength + noteLength * 0.8);
       chordGain.gain.linearRampToValueAtTime(0, now + i * noteLength + noteLength);
       
       chordOsc.start(now + i * noteLength);
