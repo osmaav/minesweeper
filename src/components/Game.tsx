@@ -62,6 +62,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1); // 1 = нормальный масштаб
+  const [isPinching, setIsPinching] = useState(false); // Глобальный флаг pinch-жеста
   
   const timerRef = useRef<number | null>(null);
   const explosionTimerRef = useRef<number | null>(null);
@@ -71,6 +72,8 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pinchStartDistance = useRef<number | null>(null);
   const pinchStartZoom = useRef<number>(1);
+  const lastTapTime = useRef<number>(0);
+  const lastTapPos = useRef<{ x: number; y: number } | null>(null);
 
   // Keep refs in sync
   useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
@@ -129,39 +132,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     }
   }, []);
 
-  // Pinch zoom handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      pinchStartDistance.current = Math.sqrt(dx * dx + dy * dy);
-      pinchStartZoom.current = zoomLevel;
-    }
-  }, [zoomLevel]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2 && pinchStartDistance.current !== null) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const currentDistance = Math.sqrt(dx * dx + dy * dy);
-      const scale = currentDistance / pinchStartDistance.current;
-      const newZoom = pinchStartZoom.current * scale;
-      
-      // Ограничения zoom:
-      // Минимум: 200 столбцов на экран (zoom = 20/200 = 0.1)
-      // Максимум: 9 столбцов на экран (zoom = 20/9 ≈ 2.22)
-      const minZoom = 20 / 200; // 0.1
-      const maxZoom = 20 / 9;   // ≈ 2.22
-      setZoomLevel(Math.max(minZoom, Math.min(maxZoom, newZoom)));
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
-      pinchStartDistance.current = null;
-    }
-  }, []);
 
   // Timer
   useEffect(() => {
@@ -188,6 +159,9 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     return () => stopBackgroundMusic();
   }, [musicEnabled]);
 
+  const [showWinOverlay, setShowWinOverlay] = useState(false);
+  const winTimerRef = useRef<number | null>(null);
+
   // Explosion overlay auto-hide
   useEffect(() => {
     if (gameState === 'lost') {
@@ -202,6 +176,24 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       if (explosionTimerRef.current) {
         clearTimeout(explosionTimerRef.current);
         explosionTimerRef.current = null;
+      }
+    };
+  }, [gameState]);
+
+  // Win overlay auto-hide (3 seconds)
+  useEffect(() => {
+    if (gameState === 'won') {
+      setShowWinOverlay(true);
+      winTimerRef.current = window.setTimeout(() => {
+        setShowWinOverlay(false);
+      }, 3000);
+    } else {
+      setShowWinOverlay(false);
+    }
+    return () => {
+      if (winTimerRef.current) {
+        clearTimeout(winTimerRef.current);
+        winTimerRef.current = null;
       }
     };
   }, [gameState]);
@@ -338,6 +330,174 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     });
   }, [soundEnabled, playerName, difficulty, triggerReRender]);
 
+  // Unified touch handling with gesture detection
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const touchStartTime = useRef<number>(0);
+  const isScrolling = useRef(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTouchPos = useRef<{ x: number; y: number } | null>(null);
+  
+  const getCellFromPoint = useCallback((x: number, y: number): { row: number; col: number } | null => {
+    if (!scrollContainerRef.current) return null;
+    
+    const rect = scrollContainerRef.current.getBoundingClientRect();
+    const scrollLeft = scrollContainerRef.current.scrollLeft;
+    const scrollTop = scrollContainerRef.current.scrollTop;
+    
+    const relativeX = x - rect.left + scrollLeft;
+    const relativeY = y - rect.top + scrollTop;
+    
+    const col = Math.floor(relativeX / (cellSize + GAME_CONSTANTS.CELL_GAP));
+    const row = Math.floor(relativeY / (cellSize + GAME_CONSTANTS.CELL_GAP));
+    
+    if (row >= 0 && row < config.rows && col >= 0 && col < config.cols) {
+      return { row, col };
+    }
+    return null;
+  }, [cellSize, config.rows, config.cols]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Pinch zoom start
+      e.preventDefault();
+      setIsPinching(true);
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDistance.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartZoom.current = zoomLevel;
+      lastTouchPos.current = null;
+      touchStartPos.current = null;
+    } else if (e.touches.length === 1 && !isPinching) {
+      // Single touch start
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      touchStartTime.current = Date.now();
+      isScrolling.current = false;
+      lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+      
+      // Start long press timer
+      longPressTimer.current = setTimeout(() => {
+        if (!isScrolling.current && touchStartPos.current && zoomLevel >= 1) {
+          const cell = getCellFromPoint(touchStartPos.current.x, touchStartPos.current.y);
+          if (cell) {
+            handleFlag(cell.row, cell.col);
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
+          }
+        }
+        longPressTimer.current = null;
+      }, 500);
+    }
+  }, [zoomLevel, isPinching, getCellFromPoint, handleFlag]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistance.current !== null) {
+      // Pinch zoom
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const currentDistance = Math.sqrt(dx * dx + dy * dy);
+      const scale = currentDistance / pinchStartDistance.current;
+      const newZoom = pinchStartZoom.current * scale;
+      
+      const minZoom = 20 / 200;
+      const maxZoom = 20 / 9;
+      setZoomLevel(Math.max(minZoom, Math.min(maxZoom, newZoom)));
+      
+      // Cancel any pending actions
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    } else if (e.touches.length === 1 && scrollContainerRef.current && lastTouchPos.current && touchStartPos.current) {
+      // Single finger scroll
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - lastTouchPos.current.x;
+      const deltaY = touch.clientY - lastTouchPos.current.y;
+      
+      // Check if movement exceeds threshold
+      const totalDeltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+      const totalDeltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+      
+      if (totalDeltaX > 10 || totalDeltaY > 10) {
+        isScrolling.current = true;
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+      }
+      
+      scrollContainerRef.current.scrollLeft -= deltaX;
+      scrollContainerRef.current.scrollTop -= deltaY;
+      
+      lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchStartDistance.current = null;
+      setIsPinching(false);
+    }
+    
+    if (e.touches.length === 0) {
+      // All fingers lifted
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      
+      // If it was a quick tap without scrolling
+      if (!isScrolling.current && touchStartPos.current && !isPinching) {
+        const touchDuration = Date.now() - touchStartTime.current;
+        if (touchDuration < 500) { // Less than long press threshold
+          const currentTime = Date.now();
+          const currentPos = touchStartPos.current;
+          
+          // Check for double tap
+          const timeSinceLastTap = currentTime - lastTapTime.current;
+          const isDoubleTap = timeSinceLastTap < 300 && lastTapPos.current &&
+            Math.abs(currentPos.x - lastTapPos.current.x) < 30 &&
+            Math.abs(currentPos.y - lastTapPos.current.y) < 30;
+          
+          if (isDoubleTap && zoomLevel !== 1) {
+            // Double tap detected - reset zoom to default
+            setZoomLevel(1);
+            if (soundEnabled) playClickSound();
+          } else if (zoomLevel >= 1) {
+            // Single tap - trigger cell action
+            const cell = getCellFromPoint(currentPos.x, currentPos.y);
+            if (cell) {
+              const cellData = board.flags[cell.row * board.cols + cell.col];
+              const isRevealed = (cellData & 0x02) !== 0;
+              const isFlagged = (cellData & 0x04) !== 0;
+              
+              if (isRevealed) {
+                handleChord(cell.row, cell.col);
+              } else if (!isFlagged) {
+                handleReveal(cell.row, cell.col);
+              }
+            }
+            
+            // Save this tap for potential double tap detection
+            lastTapTime.current = currentTime;
+            lastTapPos.current = { x: currentPos.x, y: currentPos.y };
+          }
+        }
+      }
+      
+      touchStartPos.current = null;
+      lastTouchPos.current = null;
+      isScrolling.current = false;
+    }
+  }, [isPinching, getCellFromPoint, handleReveal, handleChord, board, zoomLevel, soundEnabled]);
+
   const handleRestart = () => {
     if (soundEnabled) playClickSound();
     setBoard(createOptimizedBoard(config));
@@ -402,7 +562,9 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
   const totalBoardHeight = config.rows * (cellSize + GAME_CONSTANTS.CELL_GAP) + GAME_CONSTANTS.CELL_GAP;
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 overflow-hidden">
+    <div 
+      className="h-screen flex flex-col bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 overflow-hidden"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-2 py-2 bg-black/40 backdrop-blur-sm border-b border-white/10 shrink-0"
         style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' }}>
@@ -484,9 +646,9 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
           gameState === 'lost' ? 'opacity-70' : ''
         }`}
         style={{ 
-          marginTop: '5vh', 
-          marginBottom: '5vh',
-          touchAction: 'pan-x pan-y'
+          marginTop: '2vh', 
+          marginBottom: '2vh',
+          touchAction: 'none'
         }}
         onScroll={handleScroll}
         onTouchStart={handleTouchStart}
@@ -516,11 +678,9 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
                 cell={cell}
                 gameOver={gameState === 'lost'}
                 gameWon={gameState === 'won'}
-                onReveal={handleReveal}
-                onFlag={handleFlag}
-                onChord={handleChord}
                 cellSize={cellSize}
                 miniMapMode={zoomLevel < 1}
+                disabled={zoomLevel < 1}
               />
             </div>
           ))}
@@ -570,7 +730,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
 
       {/* Game Over / Win Overlay */}
       <AnimatePresence>
-        {(gameState === 'won' || (gameState === 'lost' && showExplosionOverlay)) && (
+        {((gameState === 'won' && showWinOverlay) || (gameState === 'lost' && showExplosionOverlay)) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

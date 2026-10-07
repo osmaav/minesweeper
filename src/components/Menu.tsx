@@ -20,9 +20,9 @@ function FloatingMine({ delay, x, size }: { delay: number; x: number; size: numb
       className="absolute text-white/5 pointer-events-none select-none"
       style={{ left: `${x}%`, fontSize: size }}
       initial={{ y: '110vh', rotate: 0 }}
-      animate={{ y: '-10vh', rotate: 360 }}
+      animate={{ y: '-110vh', rotate: 360 }}
       transition={{
-        duration: 15 + Math.random() * 10,
+        duration: 30 + Math.random() * 20,
         delay: delay,
         repeat: Infinity,
         ease: 'linear',
@@ -85,14 +85,14 @@ export default function Menu({ onStartGame }: MenuProps) {
 
   const difficulties: Difficulty[] = ['easy', 'medium', 'hard', 'super'];
 
-  const floatingMines = Array.from({ length: 12 }, (_, i) => ({
-    delay: i * 1.5,
+  const floatingMines = Array.from({ length: 24 }, (_, i) => ({
+    delay: i * 1.2,
     x: Math.random() * 90 + 5,
     size: Math.random() * 20 + 20,
   }));
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-4 bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 relative overflow-hidden">
       {floatingMines.map((mine, i) => (
         <FloatingMine key={i} {...mine} />
       ))}
@@ -103,12 +103,12 @@ export default function Menu({ onStartGame }: MenuProps) {
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-center mb-6 relative z-10"
+        className="text-center mb-2 relative z-10"
       >
         <motion.div
           animate={{ rotate: [0, -10, 10, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          className="text-6xl md:text-7xl mb-2"
+          className="text-6xl md:text-7xl"
         >
           💣
         </motion.div>
@@ -125,10 +125,10 @@ export default function Menu({ onStartGame }: MenuProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-sm space-y-4 relative z-10"
+            className="w-full max-w-sm space-y-1 relative z-10"
           >
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
-              <label className="block text-white/80 text-xs mb-2 font-medium uppercase tracking-wide">
+            <div className="rounded-2xl p-3">
+              <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
                 👤 Имя игрока
               </label>
               <input
@@ -136,23 +136,23 @@ export default function Menu({ onStartGame }: MenuProps) {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Введите ваше имя..."
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
                 maxLength={20}
                 autoComplete="off"
               />
             </div>
 
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20 max-h-[40vh] overflow-y-auto">
-              <label className="block text-white/80 text-xs mb-3 font-medium uppercase tracking-wide">
+            <div className="rounded-2xl p-3 max-h-[40vh] overflow-y-auto">
+              <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
                 🎯 Сложность
               </label>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {difficulties.map((diff) => (
                   <motion.button
                     key={diff}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setSelectedDifficulty(diff); playClickSound(); }}
-                    className={`w-full px-4 py-3 rounded-xl text-left font-medium transition-all flex items-center gap-3 ${
+                    className={`w-full px-3 py-2 rounded-xl text-left font-medium transition-all flex items-center gap-3 ${
                       selectedDifficulty === diff
                         ? 'bg-blue-500/30 text-white border-2 border-blue-400/50 shadow-lg shadow-blue-500/10'
                         : 'bg-white/5 text-white/60 border-2 border-transparent hover:bg-white/10'

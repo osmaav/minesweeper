@@ -7,7 +7,9 @@
 
 html, body {
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: none;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 /* Prevent pull-to-refresh on iOS */
