@@ -1,0 +1,20 @@
+{
+  "name": "Сапёр — Minesweeper",
+  "short_name": "Сапёр",
+  "description": "Классическая компьютерная игра-головоломка Сапёр",
+  "start_url": "/minesweeper/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "ru"
+}
