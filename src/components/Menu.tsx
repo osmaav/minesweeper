@@ -19,10 +19,10 @@ function FloatingMine({ delay, x, size }: { delay: number; x: number; size: numb
     <motion.div
       className="absolute text-white/5 pointer-events-none select-none"
       style={{ left: `${x}%`, fontSize: size }}
-      initial={{ y: '110vh', rotate: 0 }}
+      initial={{ y: '110vh', rotate: 30 }}
       animate={{ y: '-110vh', rotate: 360 }}
       transition={{
-        duration: 30 + Math.random() * 20,
+        duration: 20 + Math.random() * 30,
         delay: delay,
         repeat: Infinity,
         ease: 'linear',
@@ -88,7 +88,7 @@ export default function Menu({ onStartGame }: MenuProps) {
   const floatingMines = Array.from({ length: 24 }, (_, i) => ({
     delay: i * 1.2,
     x: Math.random() * 90 + 5,
-    size: Math.random() * 20 + 20,
+    size: Math.random() * 30 + 10,
   }));
 
   return (
@@ -103,7 +103,7 @@ export default function Menu({ onStartGame }: MenuProps) {
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-center mb-2 relative z-10"
+        className="text-center mb-2 mt-5 relative z-10"
       >
         <motion.div
           animate={{ rotate: [0, -10, 10, -10, 0] }}
@@ -146,7 +146,7 @@ export default function Menu({ onStartGame }: MenuProps) {
               <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
                 🎯 Сложность
               </label>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {difficulties.map((diff) => (
                   <motion.button
                     key={diff}
@@ -181,7 +181,7 @@ export default function Menu({ onStartGame }: MenuProps) {
               whileTap={{ scale: 0.95 }}
               onClick={handleStart}
               disabled={!playerName.trim()}
-              className={`w-full py-4 rounded-2xl text-xl font-bold transition-all ${
+              className={`w-full mt-3 py-4 rounded-2xl text-xl font-bold transition-all ${
                 playerName.trim()
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 active:shadow-xl active:from-green-600 active:to-emerald-700'
                   : 'bg-gray-700 text-gray-500 cursor-not-allowed'
@@ -190,7 +190,7 @@ export default function Menu({ onStartGame }: MenuProps) {
               🎮 Начать игру
             </motion.button>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mb-2 mt-1">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => { setShowStats(true); playClickSound(); }}
