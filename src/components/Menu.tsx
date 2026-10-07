@@ -127,7 +127,7 @@ export default function Menu({ onStartGame }: MenuProps) {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-sm space-y-1 relative z-10"
           >
-            <div className="rounded-2xl p-3">
+            <div className="bg-white/5 rounded-2xl p-3 mb-3">
               <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
                 👤 Имя игрока
               </label>
@@ -136,13 +136,14 @@ export default function Menu({ onStartGame }: MenuProps) {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Введите ваше имя..."
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 
+                focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
                 maxLength={20}
                 autoComplete="off"
               />
             </div>
 
-            <div className="rounded-2xl p-3 max-h-[40vh] overflow-y-auto">
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 max-h-[40vh] overflow-y-auto">
               <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
                 🎯 Сложность
               </label>
