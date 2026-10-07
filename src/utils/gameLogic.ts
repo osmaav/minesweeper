@@ -1,4 +1,4 @@
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'super';
 
 export interface CellData {
   row: number;
@@ -19,12 +19,14 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, GameConfig> = {
   easy: { rows: 9, cols: 9, mines: 10 },
   medium: { rows: 16, cols: 16, mines: 40 },
   hard: { rows: 16, cols: 30, mines: 99 },
+  super: { rows: 4100, cols: 4100, mines: 3342350}
 };
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: 'Лёгкий',
   medium: 'Средний',
   hard: 'Сложный',
+  super: 'Полный...' 
 };
 
 export function createBoard(config: GameConfig): CellData[][] {
