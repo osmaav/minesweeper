@@ -566,7 +566,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       className="h-screen flex flex-col bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-2 bg-black/40 backdrop-blur-sm border-b border-white/10 shrink-0"
+      <div className="mt-5 flex items-center justify-between px-2 py-2 bg-black/40 backdrop-blur-sm border-b border-white/10 shrink-0"
         style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' }}>
         <motion.button
           whileTap={{ scale: 0.9 }}
@@ -578,11 +578,11 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="text-center min-w-[50px]">
-            <div className="text-[10px] text-white/50 uppercase tracking-wide">💣 Мины</div>
+            <div className="text-sm text-white/50 uppercase tracking-wide">💣 Мины</div>
             <div className="text-base sm:text-lg font-bold text-red-400 font-mono">{minesLeft}</div>
           </div>
           <div className="text-center min-w-[50px]">
-            <div className="text-[10px] text-white/50 uppercase tracking-wide">⏱ Время</div>
+            <div className="text-sm text-white/50 uppercase tracking-wide">⏱ Время</div>
             <div className="text-base sm:text-lg font-bold text-yellow-400 font-mono">{formatTime(timer)}</div>
           </div>
         </div>
@@ -688,12 +688,12 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       </div>
 
       {/* Hint for mobile */}
-      <div className="text-center text-[10px] text-white/30 pb-1 shrink-0">
+      <div className="text-center text-xs text-white/40 pb-1 shrink-0">
         Нажмите — открыть • Удерживайте — поставить флаг
       </div>
 
       {/* Bottom bar */}
-      <div className="flex justify-center gap-2 pb-2 shrink-0 px-2"
+      <div className="mb-5 flex justify-center gap-2 pb-2 shrink-0 px-2"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
         {gameState === 'lost' && !showExplosionOverlay && (
           <motion.div
