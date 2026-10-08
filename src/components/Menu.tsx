@@ -153,7 +153,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                     key={diff}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setSelectedDifficulty(diff); playClickSound(); }}
-                    className={`w-full px-3 py-2 rounded-xl backdrop-blur-xs text-left font-medium transition-all flex items-center gap-3 ${
+                    className={`w-full px-3 py-2 rounded-xl text-left font-medium transition-all flex items-center gap-3 ${
                       selectedDifficulty === diff
                         ? 'bg-blue-500/30 text-white border-2 border-blue-400/50 shadow-lg shadow-blue-500/10'
                         : 'bg-white/5 text-white/60 border-2 border-transparent hover:bg-white/10'
