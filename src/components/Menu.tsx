@@ -19,10 +19,10 @@ function FloatingMine({ delay, x, size }: { delay: number; x: number; size: numb
     <motion.div
       className="absolute text-white/5 pointer-events-none select-none"
       style={{ left: `${x}%`, fontSize: size }}
-      initial={{ y: '110vh', rotate: 30 }}
-      animate={{ y: '-110vh', rotate: 180 }}
+      initial={{ y: '110vh', rotate: -360 }}
+      animate={{ y: '-110vh', rotate: [-270, 180, -100, 50, -50, 0] }}
       transition={{
-        duration: 15 + Math.random() * 20,
+        duration: 25 + Math.random() * 50,
         delay: delay,
         repeat: Infinity,
         ease: 'linear',
@@ -61,10 +61,10 @@ export default function Menu({ onStartGame }: MenuProps) {
     if (newVal) playClickSound();
   }, [musicEnabled]);
 
-  const handleSwitchMelody = useCallback(() => {
-    switchMelody(true);
-    playClickSound();
-  }, []);
+  // const handleSwitchMelody = useCallback(() => {
+  //   switchMelody(true);
+  //   playClickSound();
+  // }, []);
 
   const handleStart = useCallback(() => {
     if (!playerName.trim()) return;
@@ -88,7 +88,7 @@ export default function Menu({ onStartGame }: MenuProps) {
   const floatingMines = Array.from({ length: 24 }, (_, i) => ({
     delay: i * 1.2,
     x: Math.random() * 90 + 5,
-    size: Math.random() * 20 + 20,
+    size: Math.random() * 20 + 5,
   }));
 
   return (
@@ -106,7 +106,7 @@ export default function Menu({ onStartGame }: MenuProps) {
         className="text-center mb-2 mt-15 relative z-10"
       >
         <motion.div
-          animate={{ rotate: [0, -10, 10, -10, 0] }}
+          animate={{ rotate: [0, -30, 0, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
           className="text-6xl md:text-7xl"
         >
@@ -115,7 +115,7 @@ export default function Menu({ onStartGame }: MenuProps) {
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-1 tracking-tight">
           Сапёр
         </h1>
-        <p className="text-gray-400 text-sm md:text-base">Классическая головоломка</p>
+        <p className="text-gray-400 text-m md:text-base">Классическая головоломка</p>
       </motion.div>
 
       <AnimatePresence mode="wait">
@@ -128,7 +128,7 @@ export default function Menu({ onStartGame }: MenuProps) {
             className="w-full max-w-sm space-y-1 relative z-10"
           >
             <div className="bg-white/5 rounded-2xl p-3 mb-3">
-              <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
+              <label className="block text-white/80 text-m mb-1 font-medium uppercase tracking-wide">
                 👤 Имя игрока
               </label>
               <input
@@ -136,7 +136,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Введите ваше имя..."
-                className="w-full px-4 py-2.5 bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-white placeholder-white/30 
+                className="w-full px-4 py-2.5 bg-white/5 backdrop-blur-xs border border-white/10 rounded-xl text-white placeholder-white/30 
                 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
                 maxLength={20}
                 autoComplete="off"
@@ -144,8 +144,8 @@ export default function Menu({ onStartGame }: MenuProps) {
             </div>
 
             <div className="bg-white/5 rounded-2xl p-4 border border-white/10 max-h-[40vh] overflow-y-auto">
-              <label className="block text-white/80 text-xs mb-1 font-medium uppercase tracking-wide">
-                🎯 Сложность
+              <label className="block text-white/80 text-m mb-1 font-medium uppercase tracking-wide">
+                🎯 Уровень
               </label>
               <div className="space-y-2">
                 {difficulties.map((diff) => (
@@ -153,7 +153,7 @@ export default function Menu({ onStartGame }: MenuProps) {
                     key={diff}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setSelectedDifficulty(diff); playClickSound(); }}
-                    className={`w-full px-3 py-2 rounded-xl backdrop-blur-lg text-left font-medium transition-all flex items-center gap-3 ${
+                    className={`w-full px-3 py-2 rounded-xl backdrop-blur-xs text-left font-medium transition-all flex items-center gap-3 ${
                       selectedDifficulty === diff
                         ? 'bg-blue-500/30 text-white border-2 border-blue-400/50 shadow-lg shadow-blue-500/10'
                         : 'bg-white/5 text-white/60 border-2 border-transparent hover:bg-white/10'
@@ -182,9 +182,9 @@ export default function Menu({ onStartGame }: MenuProps) {
               whileTap={{ scale: 0.95 }}
               onClick={handleStart}
               disabled={!playerName.trim()}
-              className={`w-full mt-3 py-4 backdrop-blur-lg rounded-2xl text-xl font-bold transition-all ${
+              className={`w-full mt-3 py-4 rounded-2xl backdrop-blur-xs text-xl font-bold transition-all ${
                 playerName.trim()
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 active:shadow-xl active:from-green-600 active:to-emerald-700'
+                  ? 'bg-gradient-to-r from-green-500/30 to-emerald-700/30 text-white shadow-lg shadow-green-700/10 active:shadow-xl active:from-green-600/10 active:to-emerald-700'
                   : 'bg-gray-700 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -218,15 +218,15 @@ export default function Menu({ onStartGame }: MenuProps) {
                     : 'bg-white/5 text-white/50 border-white/10'
                 }`}
               >
-                {musicEnabled ? '🎵 ВКЛ' : '🔇 ВЫКЛ'}
+                {musicEnabled ? '🎵 МУЗЫКА ВКЛ' : '🔇 МУЗЫКА ВЫКЛ'}
               </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSwitchMelody}
-                className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium border border-white/10 active:bg-white/15"
-              >
-                🎶 Мелодия
-              </motion.button>
+              {/* <motion.button */}
+              {/*   whileTap={{ scale: 0.95 }} */}
+              {/*   onClick={handleSwitchMelody} */}
+              {/*   className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium border border-white/10 active:bg-white/15" */}
+              {/* > */}
+              {/*   🎶 Мелодия */}
+              {/* </motion.button> */}
             </div>
           </motion.div>
         ) : showStats ? (
