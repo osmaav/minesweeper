@@ -136,14 +136,14 @@ export default function Menu({ onStartGame }: MenuProps) {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Введите ваше имя..."
-                className="w-full px-4 py-2.5 bg-white/5 backdrop-blur-xs border border-white/10 rounded-xl text-white placeholder-white/30 
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 
                 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-base"
-                maxLength={20}
+                maxLength={33}
                 autoComplete="off"
               />
             </div>
 
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 max-h-[40vh] overflow-y-auto">
+            <div className="bg-white/5 rounded-2xl p-3 border border-white/10 overflow-y-auto">
               <label className="block text-white/80 text-m mb-1 font-medium uppercase tracking-wide">
                 🎯 Уровень
               </label>
