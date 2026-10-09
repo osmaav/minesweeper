@@ -94,9 +94,9 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       const zoomedCellSize = baseCellSize * zoomLevel;
       
       // Ограничения:
-      // Минимум: 200 столбцов на экран (очень мелко)
+      // Минимум: 400 столбцов на экран (очень мелко)
       // Максимум: 9 столбцов на экран (очень крупно)
-      const minCellSize = availableWidth / 200;
+      const minCellSize = availableWidth / 400;
       const maxCellSize = availableWidth / 9;
       
       const finalSize = Math.max(minCellSize, Math.min(maxCellSize, zoomedCellSize));
@@ -168,7 +168,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       setShowExplosionOverlay(true);
       explosionTimerRef.current = window.setTimeout(() => {
         setShowExplosionOverlay(false);
-      }, GAME_CONSTANTS.EXPLOSION_OVERLAY_DURATION);
+      }, GAME_CONSTANTS.OVERLAY_DURATION);
     } else {
       setShowExplosionOverlay(false);
     }
@@ -180,13 +180,13 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     };
   }, [gameState]);
 
-  // Win overlay auto-hide (3 seconds)
+  // Win overlay auto-hide
   useEffect(() => {
     if (gameState === 'won') {
       setShowWinOverlay(true);
       winTimerRef.current = window.setTimeout(() => {
         setShowWinOverlay(false);
-      }, 3000);
+      }, GAME_CONSTANTS.OVERLAY_DURATION);
     } else {
       setShowWinOverlay(false);
     }
@@ -242,19 +242,19 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       }
 
       if (checkWin(currentBoard)) {
-        setGameState('won');
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        if (soundEnabled) playWinSound();
-        if (navigator.vibrate) navigator.vibrate([50, 30, 50, 30, 200]);
         saveGameResult({
           playerName,
           difficulty,
           time: timerValueRef.current,
           date: new Date().toISOString(),
         });
+        setGameState('won');
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (soundEnabled) playWinSound();
+        if (navigator.vibrate) navigator.vibrate([50, 30, 50, 30, 200]); 
       }
 
       triggerReRender();
@@ -311,18 +311,18 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       }
 
       if (checkWin(currentBoard)) {
-        setGameState('won');
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        if (soundEnabled) playWinSound();
         saveGameResult({
           playerName,
           difficulty,
           time: timerValueRef.current,
           date: new Date().toISOString(),
         });
+        setGameState('won');
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (soundEnabled) playWinSound();
       }
 
       triggerReRender();
