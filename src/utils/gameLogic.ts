@@ -16,9 +16,9 @@ export interface OptimizedBoard {
 }
 
 // Битовые маски
-const MINE_BIT = 0x01;
-const REVEALED_BIT = 0x02;
-const FLAGGED_BIT = 0x04;
+const MINE_BIT = 0x01; //мина
+const REVEALED_BIT = 0x02; //ячейка открыта
+const FLAGGED_BIT = 0x04; // установлен флажок
 
 // ============ ФАБРИКИ ============
 
@@ -40,15 +40,15 @@ function getIndex(board: OptimizedBoard, row: number, col: number): number {
 
 // Проверка флагов
 export function isMine(board: OptimizedBoard, row: number, col: number): boolean {
-  return (board.flags[getIndex(board, row, col)] & MINE_BIT) !== 0;
+  return (board.flags[getIndex(board, row, col)] & MINE_BIT) !== 0; //мина
 }
 
 export function isRevealed(board: OptimizedBoard, row: number, col: number): boolean {
-  return (board.flags[getIndex(board, row, col)] & REVEALED_BIT) !== 0;
+  return (board.flags[getIndex(board, row, col)] & REVEALED_BIT) !== 0; //открыта
 }
 
 export function isFlagged(board: OptimizedBoard, row: number, col: number): boolean {
-  return (board.flags[getIndex(board, row, col)] & FLAGGED_BIT) !== 0;
+  return (board.flags[getIndex(board, row, col)] & FLAGGED_BIT) !== 0; //флажок
 }
 
 export function getAdjacentMines(board: OptimizedBoard, row: number, col: number): number {
@@ -193,7 +193,7 @@ export function countFlags(board: OptimizedBoard): number {
   return count;
 }
 
-// ============ ПРОВЕРКА ПОБЕДЫ ============
+// ============ ПРОВЕРКА ПОБЕДЫ ===========
 
 export function checkWin(board: OptimizedBoard): boolean {
   for (let i = 0; i < board.totalCells; i++) {
@@ -204,7 +204,7 @@ export function checkWin(board: OptimizedBoard): boolean {
   return true;
 }
 
-// ============ ОТКРЫТИЕ ВСЕХ МИН ============
+// ============ ОТКРЫТИЕ ВСЕХ МИН =========
 
 export function revealAllMines(board: OptimizedBoard): void {
   for (let i = 0; i < board.totalCells; i++) {
@@ -214,7 +214,7 @@ export function revealAllMines(board: OptimizedBoard): void {
   }
 }
 
-// ============ CHORD REVEAL ============
+// ============ ОТКРЫТИЕ ГРУПП ЯЧЕЕК ======
 
 export function chordReveal(
   board: OptimizedBoard,
@@ -275,7 +275,7 @@ export interface CellRenderData {
   isFlagged: boolean;
   adjacentMines: number;
 }
-
+ 
 export function getCellData(board: OptimizedBoard, row: number, col: number): CellRenderData {
   const idx = getIndex(board, row, col);
   const flags = board.flags[idx];
