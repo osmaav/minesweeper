@@ -566,7 +566,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       className="h-screen flex flex-col bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 overflow-hidden"
     >
       {/* Header */}
-      <div className="mt-5 flex items-center justify-between px-2 py-2 bg-black/40 backdrop-blur-sm border-b border-white/10 shrink-0"
+      <div className="mt-15 flex items-center justify-between px-2 py-2 bg-black/40 backdrop-blur-sm border-b border-white/10 shrink-0"
         style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' }}>
         <motion.button
           whileTap={{ scale: 0.9 }}
@@ -693,7 +693,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       </div>
 
       {/* Bottom bar */}
-      <div className="mb-5 flex justify-center gap-2 pb-2 shrink-0 px-2"
+      <div className="mb-15 flex justify-center gap-2 pb-2 shrink-0 px-2"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
         {gameState === 'lost' && !showExplosionOverlay && (
           <motion.div
