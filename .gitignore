@@ -1,29 +1,7 @@
-.next/
-*.log
-
-
-# Dependencies
+(empty)
+# Зависимости и артефакты сборки не коммитим
 node_modules/
-
-# Build output
-dist/
-
-# OS files
+build/
+coverage/
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Logs
 *.log
-npm-debug.log*
-.npmrc

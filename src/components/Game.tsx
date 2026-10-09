@@ -202,6 +202,13 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     setRenderVersion(v => v + 1);
   }, []);
 
+  // ИСПРАВЛЕНИЕ БАГА: saveGameResult() больше НЕ вызывается из updater-функции
+  // setBoard(...). Updater'ы React должны быть чистыми: в production-сборке
+  // (React StrictMode отключён) они выполняются один раз, но в dev-режиме —
+  // дважды, что приводило к дублированию записей; при любом повторном проходе
+  // checkWin() уже возвращал true (флаги поля мутируются на месте), и одна и та
+  // же победа сохранялась несколько раз, ускоряя переполнение хранилища.
+  // Теперь обработка победы/поражения вынесена в useEffect ниже.
   const handleReveal = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
 
@@ -212,7 +219,7 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
       }
 
       const result = revealCell(currentBoard, row, col);
-      
+
       if (soundEnabled) {
         if (result.hitMine) {
           playExplosionSound();
@@ -225,42 +232,22 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         setGameState('lost');
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        saveGameResult({
-          playerName,
-          difficulty,
-          time: 0,
-          date: new Date().toISOString(),
-        });
         revealAllMines(currentBoard);
         triggerReRender();
         return currentBoard;
       }
 
       if (checkWin(currentBoard)) {
-        saveGameResult({
-          playerName,
-          difficulty,
-          time: timerValueRef.current,
-          date: new Date().toISOString(),
-        });
         setGameState('won');
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
         if (soundEnabled) playWinSound();
-        if (navigator.vibrate) navigator.vibrate([50, 30, 50, 30, 200]); 
+        if (navigator.vibrate) navigator.vibrate([50, 30, 50, 30, 200]);
       }
 
       triggerReRender();
       return currentBoard;
     });
-  }, [config, soundEnabled, playerName, difficulty, triggerReRender]);
+  }, [config, soundEnabled, triggerReRender]);
 
   const handleFlag = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
@@ -274,12 +261,15 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     });
   }, [soundEnabled, triggerReRender]);
 
+  // ИСПРАВЛЕНИЕ БАГА: аналогично handleReveal — побочные эффекты записи
+  // результата убраны из updater-функции setBoard(...) в чистый обработчик
+  // событий (см. useEffect ниже, реагирующий на смену gameState).
   const handleChord = useCallback((row: number, col: number) => {
     if (gameStateRef.current !== 'playing') return;
 
     setBoard(currentBoard => {
       const result = chordReveal(currentBoard, row, col);
-      
+
       if (result.revealed.length === 0) return currentBoard;
 
       if (soundEnabled) {
@@ -294,41 +284,56 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
         setGameState('lost');
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        saveGameResult({
-          playerName,
-          difficulty,
-          time: 0,
-          date: new Date().toISOString(),
-        });
         revealAllMines(currentBoard);
         triggerReRender();
         return currentBoard;
       }
 
       if (checkWin(currentBoard)) {
-        saveGameResult({
-          playerName,
-          difficulty,
-          time: timerValueRef.current,
-          date: new Date().toISOString(),
-        });
         setGameState('won');
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
         if (soundEnabled) playWinSound();
       }
 
       triggerReRender();
       return currentBoard;
     });
-  }, [soundEnabled, playerName, difficulty, triggerReRender]);
+  }, [soundEnabled, triggerReRender]);
+
+  // ============ ИСПРАВЛЕНИЕ БАГА: единая точка сохранения результата ============
+  // Сохраняем итог игры ровно один раз при переходе gameState в 'won' или 'lost'.
+  // Раньше saveGameResult() вызывался внутри updater-функций setBoard(...),
+  // которые не обязаны быть чистыми вызовами (в dev-режиме React выполняет их
+  // дважды) — из-за этого одна победа могла записываться несколько раз, а
+  // переполненный 4-КБ cookie (см. cookies.ts/storage.ts) молча отбрасывал
+  // ВСЕ новые записи. Теперь запись выполняется однократно, вне рендера,
+  // и хранится в localStorage.
+  const savedResultForGameRef = useRef(false); // флаг «результат уже сохранён для текущей партии»
+
+  useEffect(() => {
+    if (gameState === 'won' || gameState === 'lost') {
+      // Останавливаем таймер в момент окончания игры.
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Защита от повторного сохранения той же партии.
+      if (!savedResultForGameRef.current) {
+        savedResultForGameRef.current = true;
+        saveGameResult({
+          playerName,
+          difficulty,
+          // Победа: финальное время; поражение: 0 (так статистика отличает победы).
+          time: gameState === 'won' ? timerValueRef.current : 0,
+          date: new Date().toISOString(),
+        });
+      }
+    } else {
+      // Новая партия ('playing') — разрешаем сохранить результат заново.
+      savedResultForGameRef.current = false;
+    }
+  }, [gameState, playerName, difficulty]);
 
   // Unified touch handling with gesture detection
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -504,6 +509,11 @@ export default function Game({ difficulty, playerName, onBackToMenu }: GameProps
     setGameState('playing');
     setTimer(0);
     setFirstClick(true);
+    // ИСПРАВЛЕНИЕ БАГА: при рестарте сбрасываем и флаг сохранённого результата,
+    // и ref таймера — иначе useEffect может сохранить результат новой партии
+    // с временем или статусом предыдущей.
+    timerValueRef.current = 0;
+    savedResultForGameRef.current = false;
     setIsShaking(false);
     setShowExplosionOverlay(false);
     if (timerRef.current) {
