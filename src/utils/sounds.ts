@@ -138,7 +138,7 @@ const gameMelodies: Melody[] = [
         // Под Am и Bm во второй половине
         220.00, 220.00, 220.00, 220.00, 220.00, 220.00, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 246.94, 164.81
     ],
-    tempo: 0.2,
+    tempo: MELODY_TEMPOS.FAST,
     type: 'square' as OscillatorType,     // Острый лид-звук
     chordType: 'triangle' as OscillatorType // Тяжелый басовый фундамент
   },
@@ -183,7 +183,7 @@ const menuMelodies: Melody[] = [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 110.00, 164.81,
       261.63, 0, 0, 123.47, 164.81, 246.94, 329.63, 0, 110.00, 0, 0, 0, 0, 0
     ],
-    tempo: 0.2,                         // Слегка ускорили темп для сохранения динамики
+    tempo: MELODY_TEMPOS.FAST,                         // Слегка ускорили темп для сохранения динамики
     type: 'sine' as OscillatorType,      // Имитация мягкого пианино
     chordType: 'sine' as OscillatorType  // Глубокий, чистый бас без хрипов
   },

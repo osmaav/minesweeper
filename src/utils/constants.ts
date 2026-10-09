@@ -2,7 +2,7 @@
 
 export const GAME_CONSTANTS = {
   // Размеры ячеек
-  CELL_SIZE_MIN: 18,
+  CELL_SIZE_MIN: 25,
   CELL_SIZE_MAX: 44,
   CELL_GAP: 1,
   
@@ -57,8 +57,8 @@ export interface GameConfig {
 export const DIFFICULTY_CONFIG: Record<Difficulty, GameConfig> = {
   easy: { rows: 9, cols: 9, mines: 10 },
   medium: { rows: 16, cols: 16, mines: 40 },
-  hard: { rows: 16, cols: 30, mines: 99 },
-  super: { rows: 4100, cols: 4100, mines: 3342350 },
+  hard: { rows: 30, cols: 30, mines: 99 },
+  super: { rows: 410, cols: 410, mines: 333 }, //{ rows: 4100, cols: 4100, mines: 3342350 },
 } as const;
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -78,8 +78,8 @@ export const DIFFICULTY_ICONS: Record<Difficulty, string> = {
 export const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, string> = {
   easy: '9×9 • 10 мин',
   medium: '16×16 • 40 мин',
-  hard: '16×30 • 99 мин',
-  super: '4100×4100 • 3,342,350 мин',
+  hard: '30×30 • 99 мин',
+  super: '410×410 • 333 мины', //'4100×4100 • 3,342,350 мин',
 } as const;
 
 // ============ ЦВЕТА ЧИСЕЛ ============
